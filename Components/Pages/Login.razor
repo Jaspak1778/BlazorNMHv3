@@ -1,38 +1,31 @@
 ﻿@page "/login"
+@inject HttpClient Http
+@inject NavigationManager Navigation
 @inject User User
-@inject NavigationManager NavigationManager
-@inject HttpClient HttpClient
+@inject TokenService Token
 
-<div class="container-fluid boxelement">
+<div class="container">
     <h1>Kirjaudu</h1>
-    <br />
-    <form>
+
+    <form class="login-form" @onsubmit="Logins">
         <div class="input-container">
-            <label for="user">Käyttäjänimi</label>
-            <input id="user" class="box" @bind="username" @onmouseover="() => showFail = false" required />
+            <InputText class="box" id="user" name="user" @bind-Value="username" required />
+            <label for="user" class="floating-label">Käyttäjänimi</label>
         </div>
+
         <div class="input-container">
-            <label for="pass">Salasanasi</label>
-            <textarea id="pass" type="password" @bind="password" required />
+            <InputText class="box" id="pass" @bind-Value="password" type="password" required />
+            <label for="pass" class="floating-label">Salasana</label>
         </div>
-        <div class="flex-lg-wrap">
-            <p></p>
-            <button class="custom-button" id="pass" type="submit" @onclick="Logins">
-                Kirjaudu
-            </button>
-        </div>
+
+        <button class="custom-button" type="submit">
+            Kirjaudu
+        </button>
     </form>
-    <br />
-    <div id="pass">
-        <a style="color:dodgerblue; width:auto" class="btn btn-link" href="signup">Uusi käyttäjä? Luo tunnukset</a>
+
+    <div class="signup-link">
+        <a href="signup">Uusi käyttäjä? Luo tunnukset</a>
     </div>
-</div>
-<br />
-<div>
-    @if (showFail)
-    {
-        <p class="alert">@announcer</p>
-    }
 </div>
 
 @code {
@@ -40,9 +33,22 @@
     private string? username;
     private string? password;
     private string? announcer;
+
     private bool showFail = false;
-    private string LoginUri = ApiCallerUri.Login;
-    private string UsersUri = ApiCallerUri.Users;
+
+    //LOGIN URI
+
+    private const string LoginUri = ApiCallerUri.Login;
+
+    //USERS URI
+
+    private const string UsersUri = ApiCallerUri.Users;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
 
     private async Task Logins()
     {
@@ -58,7 +64,7 @@
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         // Yllä on logindata joka on muutettu JSON muotoon ja joka lisätään bodyyn
 
-        var response = await HttpClient.PostAsync(LoginUri, content);
+        var response = await Http.PostAsync(LoginUri, content);
         if (response.IsSuccessStatusCode)
 
         {
@@ -68,6 +74,7 @@
             if (user != null)
 
             {
+
 
                 announcer = "Kirjauduttu sisään..";
                 User.ShowAlert = true;
@@ -92,7 +99,7 @@
     private async Task FetchUserDetails()
     {
 
-        var userResponse = await HttpClient.GetAsync(UsersUri);
+        var userResponse = await Http.GetAsync("https://djangorestapiv3.azurewebsites.net/api/users/");
 
         if (userResponse.IsSuccessStatusCode)
         {
@@ -107,7 +114,8 @@
                 User.IsLoggedIn = true;                // Aseta kirjautumistila
 
                 Console.WriteLine($"Kirjautunut käyttäjä: {userDetails.username}, Etunimi: {userDetails.first_name}, Sukunimi: {userDetails.last_name}");
-                NavigationManager.NavigateTo("/");
+                Navigation.NavigateTo("/");
+                await GetToken();
             }
             else
             {
@@ -117,9 +125,13 @@
         else
         {
             Console.WriteLine("Käyttäjän tietojen hakeminen epäonnistui.");
-            NavigationManager.NavigateTo("/");
+            Navigation.NavigateTo("/");
         }
 
     }
-
+    private async Task GetToken()
+    {
+        var csrfToken = await Token.GetCsrfTokenAsync();
+        Console.WriteLine("Token");
+    }
 }
