@@ -1,0 +1,25 @@
+﻿
+@page "/feed"
+@inject User User
+@inject TokenService Token
+
+
+<p>FEED</p>
+
+<p> @CSRF </p>
+<p> @User.username </p>
+
+@code {
+    private string CSRF;
+    
+
+    protected override async Task OnInitializedAsync()
+    {
+        var csrfToken = await Token.GetCsrfTokenAsync();
+        CSRF = csrfToken;
+       
+
+    }
+
+
+} 
