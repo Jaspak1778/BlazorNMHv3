@@ -7,13 +7,12 @@ using System.Threading.Tasks;
 namespace MauiApp3.Models
 {
     public static class ApiCallerUri
-    {
-        // LOGIN URI
+    {   
+        //API päätepisteet
         public const string Login = "https://djangorestapiv3.azurewebsites.net/api/login/";
-
-        // USERS URI
         public const string Users = "https://djangorestapiv3.azurewebsites.net/api/users/";
-
-
+        public const string Feed = "https://djangorestapiv3.azurewebsites.net/api/posts";
+        public const string Comment = "https://djangorestapiv3.azurewebsites.net/api/comments/";
+        public const string Likes = "https://djangorestapiv3.azurewebsites.net/api/likes/";
     }
 }

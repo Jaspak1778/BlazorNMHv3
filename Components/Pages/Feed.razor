@@ -1,25 +1,320 @@
-﻿
-@page "/feed"
+﻿@page "/feed"
+
+@inject HttpClient Http
 @inject User User
 @inject TokenService Token
 
+<center>
+    <h2 class="header">Feedi</h2>
+</center>
 
-<p>FEED</p>
+<div>
+    @if (User.ShowAlert)
+    {
+        <div class="alert alert-success">Sisään kirjautuminen Onnistui</div>
+    }
+</div>
 
-<p> @CSRF </p>
-<p> @User.username </p>
+@if (posts == null || posts.Count == 0)
+{
+    <img class="loadingbgnd" src="/Pictures/iceload.gif"/>
+}
+else
+{
+    <div class="feed-container">
+        @foreach (var post in posts)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">
+                                <p>
+                                    @(post.author?.id == User.id ? "Postasit" : $"{post.author?.username ?? "Tuntematon käyttäjä"} postasi") : <span style="color:lightgrey">@GetTimeAgo(post.created)</span>
+                                </p>
+                                <h4 class="card-text">@post.content</h4>
+                                <br />
+                            </div>
+
+                            <div style="height: 50px;" class="row">
+                                <div class="col">
+                                    <div class="col-auto d-flex justify-content-end">
+                                        @if (User.IsLoggedIn)
+                                        {
+                                            <div style="margin-bottom:2rem;">
+                                                <a @onclick="() => ToggleCommentCreate(post.id ?? 0)"><img class="hovered" src="Icons/chat-dots.svg" /></a>
+                                                <a style="margin-left:15px" @onclick="() => AddLike(post.id ?? 0)"><img class="hovered" src="Icons/heart.svg" />@post.Likes?.Count</a>
+                                                @if (post.author?.id == User.id)
+                                                {
+                                                    <a class="margin" @onclick="() => DeletePost(post.id ?? 0)"><img class="hovered" src="Icons/x-circle-fill.svg" /></a>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if ((post.Comments != null && post.Comments.Count > 0) || showCommentCreate)
+                    {
+                        <div class="card-footer">
+                            @if (activePostId == post.id)
+                            {
+                                try
+                                {
+                                    <Comment_create PostId="@post.id.Value" OnCommentCreated="@UpdateCommentsAndHideForm" />
+                                }
+                                catch(Exception ex)
+                                {
+                                    Console.WriteLine($"Error during comment creation: {ex.Message}");
+                                }
+                            }
+
+                            @foreach (var comment in post.Comments.OrderByDescending(p => p.created))
+                            {
+                                <div class="card mb-2">
+                                    <div class="card-body">
+                                        <p>
+                                            @(comment.commenter?.id == User.id ? "Sinä kommentoit" : $"{comment.commenter?.username ?? "Tuntematon käyttäjä"} kommentoi")
+                                        </p>
+                                        <p class="card-text">@comment.comment_content</p>
+                                        @if (comment?.commenter?.id == User.id)
+                                        {
+                                            <div class="row">
+                                                <div class="col">
+                                                    <div class="col-auto d-flex justify-content-end">
+                                                        <a @onclick="() => DeleteComment(comment.id ?? 0)"><img class="hovered" src="Icons/x-circle-fill.svg" /></a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        <div style="height: 400px;"></div>
+    </div>
+}
 
 @code {
-    private string CSRF;
-    
+    private List<Post>? posts;
+    private string? csrfToken;
+    private string? success;
+    private const string FeedUri = ApiCallerUri.Feed;
+    private const string CommentUri = ApiCallerUri.Comment;
+    private const string LikesUri = ApiCallerUri.Likes;
+    private bool showCommentCreate = false;
+    private int? activePostId;
+
+    //päivämäärä laskenta
+    private string GetTimeAgo(DateTime? created)
+    {
+        if (!created.HasValue) return "Tuntematon aika";
+
+        var timeSpan = DateTime.Now - created.Value;
+
+        if (timeSpan.TotalDays >= 1)
+        {
+            return $"{(int)timeSpan.TotalDays} päivää sitten";
+        }
+        else if (timeSpan.TotalHours >= 1)
+        {
+            return $"{(int)timeSpan.TotalHours} tuntia sitten";
+        }
+        else if (timeSpan.TotalMinutes >= 2)
+        {
+            return $"{(int)timeSpan.TotalMinutes} minuuttia sitten";
+        }
+
+        else
+        {
+            return "Vain hetki sitten";
+        }
+    }
+
 
     protected override async Task OnInitializedAsync()
     {
-        var csrfToken = await Token.GetCsrfTokenAsync();
-        CSRF = csrfToken;
-       
+        await FetchCsrfToken();
+        await FetchPosts();
+    }
+
+    private async Task FetchCsrfToken()
+    {
+        if (string.IsNullOrEmpty(csrfToken))
+        {
+            csrfToken = await Token.GetCsrfTokenAsync();
+        }
+    }
+
+    private async Task FetchPosts()
+    {
+        try
+        {   
+            posts = await Http.GetFromJsonAsync<List<Post>>(FeedUri);
+            await FetchComments();
+            await FetchLikes();
+            await Alert();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error initializing page: {ex.Message}");
+        }
+    }
+
+    private async Task DeletePost(int postId)
+    {
+        try
+        {
+            await FetchCsrfToken(); // Tarkista ja hae token tarvittaessa
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"{FeedUri}/{postId}/");   /* muista interpolaatio dollarmerkki */
+            request.Headers.Add("X-CSRFToken", csrfToken);
+
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Julkaisu poistettu onnistuneesti!";
+                var post = posts?.FirstOrDefault(p => p.id == postId);
+                posts?.Remove(post);
+            }
+            else
+            {
+                success = "Julkaisun poisto epäonnistui.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteComment(int commentId)
+    {
+        try
+        {
+            await FetchCsrfToken();
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"{CommentUri}/{commentId}/");
+            request.Headers.Add("X-CSRFToken", csrfToken);
+
+            var response = await Http.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Kommentti poistettu onnistuneesti!";
+                var post = posts?.FirstOrDefault(p => p.Comments.Any(c => c.id == commentId));
+                post?.Comments?.RemoveAll(c => c.id == commentId);
+            }
+            else
+            {
+                success = "Kommentin poisto epäonnistui.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+    }
+
+
+    private void ToggleCommentCreate(int postId)
+    {
+        showCommentCreate = activePostId != postId;
+        activePostId = showCommentCreate ? postId : (int?)null;
+    }
+
+
+    private async Task FetchComments()
+    {
+
+        try
+        {
+
+            var allComments = await Http.GetFromJsonAsync<List<Comment>>(CommentUri);
+            foreach (var post in posts)
+            {
+                // Suodata kommentit, jotka liittyvät tähän postaukseen, ja lisää ne Comments-listaan
+                post.Comments = allComments.Where(c => c.post.id == post.id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching comments: {ex.Message}");
+        }
+    }
+
+
+    private async Task FetchLikes()
+    {
+
+        try
+        {
+
+            var allLikes = await Http.GetFromJsonAsync<List<Like>>(LikesUri);
+            foreach (var post in posts)
+            {
+                // Suodata kommentit, jotka liittyvät tähän postaukseen, ja lisää ne Comments-listaan
+                post.Likes = allLikes.Where(c => c.post.id == post.id).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching comments: {ex.Message}");
+        }
+    }
+
+
+    private async Task AddLike(int id)
+    {
+        try
+        {
+            var LikeData = new
+            {
+                post = id
+            };
+
+            var json = JsonSerializer.Serialize(LikeData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            // Lisätään CSRF token headeriin
+            content.Headers.Add("X-CSRFToken", csrfToken);
+            var response = await Http.PostAsync(LikesUri, content);
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Tykkäys lähetetty onnistuneesti!";
+                await FetchLikes();
+            }
+            else
+            {
+                success = "Tykkäys epäonnistui. Tarkista API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
 
     }
 
 
-} 
+    private async Task UpdateCommentsAndHideForm()
+    {
+        await FetchComments();  // Päivittää kommentit
+        showCommentCreate = false;  // Piilottaa kommentointikomponentin
+        activePostId = null;    // Tyhjentää aktiivisen postauksen ID:n
+        StateHasChanged();  // Päivittää näkymän
+    }
+
+    private async Task Alert()
+    {
+        // Omatekoinen alert
+        // Kutsutaan luokan kautta päivittämällä alert bool
+
+        await Task.Delay(3000); // Odota 3 sekuntia
+
+        User.ShowAlert = false; // Piilota alert
+        StateHasChanged(); // Päivitä näkymä
+    }
+}
