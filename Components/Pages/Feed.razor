@@ -16,8 +16,9 @@
 </div>
 
 @if (posts == null || posts.Count == 0)
-{
-    <img class="loadingbgnd" src="/Pictures/iceload.gif"/>
+{   
+    <p>Ladataan..</p>
+                @*     <img class="loadingbgnd" src="/Pictures/iceload.gif"/> *@
 }
 else
 {
@@ -42,11 +43,11 @@ else
                                         @if (User.IsLoggedIn)
                                         {
                                             <div style="margin-bottom:2rem;">
-                                                <a @onclick="() => ToggleCommentCreate(post.id ?? 0)"><img class="hovered" src="Icons/chat-dots.svg" /></a>
-                                                <a style="margin-left:15px" @onclick="() => AddLike(post.id ?? 0)"><img class="hovered" src="Icons/heart.svg" />@post.Likes?.Count</a>
+                                                <a @onclick="() => ToggleCommentCreate(post.id ?? 0)">&#128488;</a>
+                                                <a style="margin-left:15px" @onclick="() => AddLike(post.id ?? 0)">&#10084; @post.Likes?.Count</a>
                                                 @if (post.author?.id == User.id)
                                                 {
-                                                    <a class="margin" @onclick="() => DeletePost(post.id ?? 0)"><img class="hovered" src="Icons/x-circle-fill.svg" /></a>
+                                                    <a class="margin" @onclick="() => DeletePost(post.id ?? 0)">&#120;</a>
                                                 }
                                             </div>
                                         }
