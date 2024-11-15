@@ -4,29 +4,29 @@
 @inject User User
 @inject TokenService Token
 
-    <div class="container background">
+
+<div class="login-container">
     <h1>Kirjaudu</h1>
-
-    <form class="login-form" @onsubmit="Logins">
+    <form @onsubmit="Logins" class="login-form">
         <div class="input-container">
-            <InputText class="box" id="user" name="user" @bind-Value="username" required />
-            <label for="user" class="floating-label">Käyttäjänimi</label>
+            <InputText id="user" class="form-input" @bind-Value="username" required />
+            <label for="user" class="form-label">Käyttäjänimi</label>
         </div>
-
         <div class="input-container">
-            <InputText class="box" id="pass" @bind-Value="password" type="password" required />
-            <label for="pass" class="floating-label">Salasana</label>
+            <InputText id="pass" type="password" class="form-input" @bind-Value="password" required />
+            <label for="pass" class="form-label">Salasanasi</label>
         </div>
-
-        <button class="custom-button" type="submit">
-            Kirjaudu
-        </button>
+        <button type="submit" class="custom-button">Kirjaudu</button>
     </form>
-
-    <div class="signup-link">
-        <a href="signup">Uusi käyttäjä? Luo tunnukset</a>
-    </div>
+    <a href="signup" class="signup-link">Uusi käyttäjä? Luo tunnukset</a>
 </div>
+
+@if (showFail)
+{
+    <div class="error-message">@announcer</div>
+}
+
+
 
 @code {
 
@@ -105,12 +105,12 @@
             }
             else
             {
-                Console.WriteLine("Käyttäjän tietojen hakeminen epäonnistui: Käyttäjä ei löytynyt.");
+                announcer = "Käyttäjän tietojen hakeminen epäonnistui: Käyttäjä ei löytynyt.";
             }
         }
         else
         {
-            Console.WriteLine("Käyttäjän tietojen hakeminen epäonnistui.");
+            announcer = "Käyttäjän tietojen hakeminen epäonnistui.";
             Navigation.NavigateTo("/feed");
         }
 

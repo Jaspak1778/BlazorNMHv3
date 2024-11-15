@@ -1,85 +1,92 @@
-﻿.container {
+﻿/* Container styles */
+.login-container {
     max-width: 400px;
     margin: 0 auto;
     padding: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     text-align: center;
 }
 
-h1 {
-    margin-bottom: 20px;
-    font-size: 2rem;
-    color: #333;
-}
-
+/* Form styles */
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 20px;
 }
 
+/* Input container styles */
 .input-container {
     position: relative;
-    margin-bottom: 1.5rem;
 }
 
-.box {
+.form-input {
     width: 100%;
-    padding: 0.8rem 0.5rem;
-    font-size: 1rem;
+    padding: 12px 14px;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 25px;
+    font-size: 16px;
+    background: #f9f9f9;
     outline: none;
     transition: border-color 0.3s ease;
 }
 
-    .box:focus {
+    .form-input:focus {
         border-color: dodgerblue;
+        background: #fff;
     }
 
-.floating-label {
+/* Floating label styles */
+.form-label {
     position: absolute;
-    left: 5rem;
     top: 50%;
+    left: 14px;
     transform: translateY(-50%);
-    color: #aaa;
-    background-color: white;
-    padding: 0 5px;
-    font-size: 0.9rem;
+    color: #999;
+    font-size: 16px;
     pointer-events: none;
-    transition: 0.3s ease;
+    transition: all 0.3s ease;
 }
 
-.box:focus + .floating-label,
-.box:not(:placeholder-shown) + .floating-label {
-    top: -10px;
-    font-size: 0.75rem;
+.form-input:focus + .form-label,
+.form-input:not(:placeholder-shown) + .form-label {
+    top: 8px;
+    font-size: 12px;
     color: dodgerblue;
 }
 
+/* Button styles */
 .custom-button {
-    background-color: dodgerblue;
-    color: white;
-    font-size: 1rem;
-    padding: 0.8rem;
+    padding: 10px 20px;
+    background: dodgerblue;
+    color: #fff;
     border: none;
-    border-radius: 5px;
+    border-radius: 25px;
+    font-size: 16px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
     .custom-button:hover {
-        background-color: #1e90ff;
+        background: #0073e6;
     }
 
+/* Signup link */
 .signup-link {
-    margin-top: 1rem;
+    display: block;
+    margin-top: 15px;
+    color: dodgerblue;
+    text-decoration: none;
 }
 
-    .signup-link a {
-        color: dodgerblue;
-        text-decoration: none;
+    .signup-link:hover {
+        text-decoration: underline;
     }
 
-        .signup-link a:hover {
-            text-decoration: underline;
-        }
+/* Error message */
+.error-message {
+    margin-top: 15px;
+    color: #e74c3c;
+    font-size: 14px;
+}
