@@ -1,0 +1,77 @@
+﻿@page "/comment_create/{postId:int}"
+@inject HttpClient Http
+@inject TokenService Token
+@inject NavigationManager NavigationManager
+
+<p>Jätä kommentti</p>
+
+<div class="row">
+    <div class="col">
+        <form>
+            <input @bind="kommentti">
+            <a @onclick="NewComment"><img class="hovered" src="Icons/check2-square.svg" /></a>
+        </form>
+    </div>
+</div>
+<p>@success</p>
+
+@code {
+
+    [Parameter]
+    public int PostId { get; set; }
+
+    [Parameter]
+    public EventCallback OnCommentCreated { get; set; }
+    private const string RequestUri = "https://djangorestapiv3.azurewebsites.net/api/comments/";
+    // private const string CsrfUri = "https://djangorestapiv3.azurewebsites.net/api/csrf/";
+    private string? csrfToken;
+    private string? kommentti;
+    private string? success;
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(csrfToken))
+        {
+            csrfToken = await Token.GetCsrfTokenAsync();
+        }
+    }
+
+
+    private async Task NewComment()
+    {
+        try
+        {
+
+            var CommentData = new
+            {
+                post = PostId,
+                comment_content = kommentti
+            };
+
+            var json = JsonSerializer.Serialize(CommentData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            // Lisätään CSRF token headeriin
+            content.Headers.Add("X-CSRFToken", csrfToken);
+            var response = await Http.PostAsync(RequestUri, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Kommentti lähetetty onnistuneesti!";
+                kommentti = ""; // Tyhjennetään kenttä onnistuneen lähetyksen jälkeen
+                await OnCommentCreated.InvokeAsync();
+            }
+            else
+            {
+                success = "Kommentin lähetys epäonnistui. Tarkista API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+    }
+}
