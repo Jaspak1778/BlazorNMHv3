@@ -22,8 +22,8 @@
 
     [Parameter]
     public EventCallback OnCommentCreated { get; set; }
-    private const string RequestUri = "https://djangorestapiv3.azurewebsites.net/api/comments/";
-    // private const string CsrfUri = "https://djangorestapiv3.azurewebsites.net/api/csrf/";
+    private const string CommentUri = ApiCallerUri.Comment;
+
     private string? csrfToken;
     private string? kommentti;
     private string? success;
@@ -56,7 +56,7 @@
 
             // Lisätään CSRF token headeriin
             content.Headers.Add("X-CSRFToken", csrfToken);
-            var response = await Http.PostAsync(RequestUri, content);
+            var response = await Http.PostAsync(CommentUri, content);
 
             if (response.IsSuccessStatusCode)
             {

@@ -1,5 +1,17 @@
-﻿html, body {
+﻿
+html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: transparent   /*omacss*/
+}
+
+/*omat css*/
+body {
+    position: relative;
+    min-height: 100%;
+    background-image: url(../images/social.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
 }
 
 a, .btn-link {
@@ -86,17 +98,3 @@ h1:focus {
 }
 
 
-/*omat css*/
-html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background-color: transparent
-}
-
-body {
-    position: relative;
-    min-height: 100%;
-    background-image: url(../images/social.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-}
