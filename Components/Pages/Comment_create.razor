@@ -2,6 +2,17 @@
 @inject HttpClient Http
 @inject TokenService Token
 @inject NavigationManager NavigationManager
+<style>
+    .button {
+    font-size: 30px;
+    background: white;
+    color: blue;
+    border: none;
+    border-radius: 5px
+
+</style>
+
+
 
 <p>Jätä kommentti</p>
 
@@ -9,7 +20,10 @@
     <div class="col">
         <form>
             <input @bind="kommentti">
-            <a @onclick="NewComment"><img class="hovered" src="Icons/check2-square.svg" /></a>
+
+            /* huom kokeile button tagilla tai type button määrityksillä */
+
+            <a type="button" class="button" @onclick="NewComment"> &#10004; </a>
         </form>
     </div>
 </div>
@@ -22,15 +36,13 @@
 
     [Parameter]
     public EventCallback OnCommentCreated { get; set; }
-    private const string CommentUri = ApiCallerUri.Comment;
+
+    private const string CommentsUri = ApiCallerUri.Comment;
 
     private string? csrfToken;
     private string? kommentti;
     private string? success;
-
-
-
-
+        
     protected override async Task OnInitializedAsync()
     {
         if (string.IsNullOrEmpty(csrfToken))
@@ -39,12 +51,10 @@
         }
     }
 
-
     private async Task NewComment()
     {
         try
         {
-
             var CommentData = new
             {
                 post = PostId,
@@ -56,7 +66,7 @@
 
             // Lisätään CSRF token headeriin
             content.Headers.Add("X-CSRFToken", csrfToken);
-            var response = await Http.PostAsync(CommentUri, content);
+            var response = await Http.PostAsync(CommentsUri, content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -73,5 +83,10 @@
         {
             success = $"Virhe: {ex.Message}";
         }
+    }
+    //Apuluokka csrf tokenille
+    private class CsrfTokenResponse
+    {
+        public string? CsrfToken { get; set; }
     }
 }

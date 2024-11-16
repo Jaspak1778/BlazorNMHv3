@@ -15,5 +15,6 @@ namespace MauiApp3.Models
         public const string Posts = "https://djangorestapiv3.azurewebsites.net/api/posts/";
         public const string Comment = "https://djangorestapiv3.azurewebsites.net/api/comments/";
         public const string Likes = "https://djangorestapiv3.azurewebsites.net/api/likes/";
+        public const string Signup = "https://djangorestapiv3.azurewebsites.net/api/signup/";
     }
 }

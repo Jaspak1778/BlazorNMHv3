@@ -30,7 +30,6 @@
 
     private async Task LogOut()
     {
-
         var json = JsonSerializer.Serialize("");
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -41,8 +40,8 @@
 
         if (response.IsSuccessStatusCode)
         {
-            // // Varmistetaan, että CSRF-token päivittyy ennen seuraavaa API-pyyntöä
-            // await RefreshCsrfToken();
+            // Varmistetaan, että CSRF-token päivittyy ennen seuraavaa API-pyyntöä
+            await RefreshCsrfToken();
 
             // Lataa sovellus uudelleen
             NavigationManager.NavigateTo("/", forceLoad: true);
@@ -55,9 +54,9 @@
 
     private async Task RefreshCsrfToken()
     {
-        // //Varmistetaan että CSRF on poistettu ja uudistettu jotta sessio päättyy varmemmin
-        // var csrfToken = await Token.GetCsrfTokenAsync();
+        //Varmistetaan että CSRF on poistettu ja uudistettu jotta sessio päättyy varmemmin
+        var csrfToken = await Token.GetCsrfTokenAsync();
         Http.DefaultRequestHeaders.Remove("X-CSRFToken"); // poista vanha token
-        // Http.DefaultRequestHeaders.Add("X-CSRFToken", csrfToken); // Lisää uusi token
+        Http.DefaultRequestHeaders.Add("X-CSRFToken", csrfToken); // Lisää uusi token
     }
 }

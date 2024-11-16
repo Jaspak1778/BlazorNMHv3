@@ -1,0 +1,110 @@
+﻿@page "/signup"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<div class="signup-container">
+    <h3>Luo tunnukset</h3>
+    <h5>@announcer</h5>
+    <form @onsubmit="SendNewUserData">
+        <div class="form-group">
+            <label for="user">Käyttäjätunnus</label>
+            <InputText id="user" class="form-control" @bind-Value="createusername" required />
+        </div>
+
+        <div class="form-group">
+            <label for="mail">Sähköposti</label>
+            <InputText id="mail" class="form-control" @bind-Value="cemail" type="email" required />
+            <p> email.com  </p>
+        </div>
+
+        <div class="form-group">
+            <label for="passw">Salasana</label>
+            <InputText id="passw" class="form-control" @bind-Value="cpassword" type="password" required />
+            <p> Vähintään 8 merkkiä </p>
+        </div>
+
+        <div class="form-group">
+            <label for="fname">Etunimi (ei pakollinen)</label>
+            <InputText id="fname" class="form-control" @bind-Value="cfirst_name" />
+        </div>
+
+        <div class="form-group">
+            <label for="lname">Sukunimi (ei pakollinen)</label>
+            <InputText id="lname" class="form-control" @bind-Value="clast_name" />
+        </div>
+
+        <div class="form-group text-center">
+            <button class="btn btn-primary" type="submit">
+                Luo tunnukset
+            </button>
+        </div>
+
+        @if (showSuccess)
+        {
+            <div class="alert alert-announcer mt-3">
+                @announcer
+            </div>
+        }
+        else if (!string.IsNullOrEmpty(responseMessage))
+        {
+            <div class="alert alert-danger mt-3">
+                @responseMessage
+            </div>
+        }
+    </form>
+</div>
+
+@code {
+
+    private string? cfirst_name;
+    private string? clast_name;
+    private string? createusername;
+    private string? cemail;
+    private string? cpassword;
+    private string? announcer;
+    private bool showSuccess = false;
+    private string? responseMessage;
+
+    private string SignUpUri = ApiCallerUri.Signup;
+
+    private async Task SendNewUserData()
+    {
+        var UserData = new
+        {
+            username = createusername,
+            password = cpassword,
+            email = cemail,
+            first_name = !string.IsNullOrEmpty(cfirst_name) ? cfirst_name : "",
+            last_name = !string.IsNullOrEmpty(clast_name) ? clast_name : ""
+        };
+
+        try
+        {
+
+            announcer = "Odota..";
+
+            var json = JsonSerializer.Serialize(UserData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await Http.PostAsync(SignUpUri, content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                showSuccess = true;
+                responseMessage = await response.Content.ReadAsStringAsync();
+                announcer = "Tunnusten luonti onnistui";
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                NavigationManager.NavigateTo("/");  // Navigoi takaisin etusivulle
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"JSON: {json} \n .Response: {response}");
+                responseMessage = $"Virhe: {response.ReasonPhrase}";
+                announcer = responseMessage;
+            }
+        }
+        catch (Exception ex)
+        {
+            responseMessage = $"Virhe kutsussa: {ex.Message}";
+        }
+    }
+}
