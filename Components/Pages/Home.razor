@@ -11,7 +11,7 @@
         <form @onsubmit="Logins" class="login-form">
 
             <div class="input-container">
-            <InputText id="user" class="form-input" @bind-Value="username" placeholder="Käyttäjä" required />
+            <InputText id="user" class="form-input" @bind-Value="username" @onmouseover="() => showFail = false" placeholder="Käyttäjä" required />
           
             </div>
             <div class="input-container">

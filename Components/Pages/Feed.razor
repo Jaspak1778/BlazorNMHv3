@@ -4,8 +4,20 @@
 @inject User User
 @inject TokenService Token
 
+<style>
+    button{
+    font-size: 20px; 
+    background: white; 
+    color: red; 
+    border: none; 
+    border-radius: 5px;
+    padding: 10px 15px;
+    }
+</style>
+
+
 <center>
-    <h2 class="header">Feedi</h2>
+    <h2 class="header">Posts</h2>
 </center>
 
 <div>
@@ -47,7 +59,7 @@ else
                                                 <a style="margin-left:15px" @onclick="() => AddLike(post.id ?? 0)">&#10084; @post.Likes?.Count</a>
                                                 @if (post.author?.id == User.id)
                                                 {
-                                                    <a style="height:10px;width:10px;padding:20px" @onclick="() => DeletePost(post.id ?? 0)"> &#10060;</a>
+                                                    <button style="height:10px;width:10px;padding:20px" @onclick="() => DeletePost(post.id ?? 0)"> &#10060;</button>
                                                 }
                                             </div>
                                         }
@@ -85,7 +97,7 @@ else
                                             <div class="row">
                                                 <div class="col">
                                                     <div class="col-auto d-flex justify-content-end">
-                                                        <a @onclick="() => DeleteComment(comment.id ?? 0)"><img class="hovered" src="Icons/x-circle-fill.svg" /></a>
+                                                        <button @onclick="() => DeleteComment(comment.id ?? 0)"> &#10060</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -106,7 +118,7 @@ else
     private List<Post>? posts;
     private string? csrfToken;
     private string? success;
-    private const string FeedUri = ApiCallerUri.Feed;
+    private const string PostsUri = ApiCallerUri.Posts;
     private const string CommentUri = ApiCallerUri.Comment;
     private const string LikesUri = ApiCallerUri.Likes;
     private bool showCommentCreate = false;
@@ -157,7 +169,7 @@ else
     {
         try
         {   
-            posts = await Http.GetFromJsonAsync<List<Post>>(FeedUri);
+            posts = await Http.GetFromJsonAsync<List<Post>>(PostsUri);
             await FetchComments();
             await FetchLikes();
             await Alert();
@@ -173,7 +185,7 @@ else
         try
         {
             await FetchCsrfToken(); // Tarkista ja hae token tarvittaessa
-            var request = new HttpRequestMessage(HttpMethod.Delete, $"{FeedUri}/{postId}/");   /* muista interpolaatio dollarmerkki */
+            var request = new HttpRequestMessage(HttpMethod.Delete, $"{PostsUri}/{postId}/");   /* muista interpolaatio dollarmerkki */
             request.Headers.Add("X-CSRFToken", csrfToken);
 
             var response = await Http.SendAsync(request);

@@ -19,7 +19,7 @@ namespace MauiApp3
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<User>();
             builder.Services.AddScoped<TokenService>();
-
+            builder.Services.AddSingleton<DeviceInfoService>();
 #if DEBUG
             builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();

@@ -1,0 +1,63 @@
+﻿@page "/info-logout"
+@inject DeviceInfoService Device
+@inject User User
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject TokenService Token
+
+<h3>InfoTab</h3>
+<h4>IP Adress</h4>
+<p>@Device.IPAddress</p>
+<h4>USER INFO:</h4>
+<p>User ID: @User.id</p>
+<p>User Logged : @User.IsLoggedIn</p>
+<p>User Logged : @User.username</p>
+
+<button class="btn btn-danger" @onclick="LogOut"> Kirjaudu ulos </button>
+
+@code {
+    private const string LogoutUri = ApiCallerUri.Logout;
+    private string? Message;
+    private string? csrfToken;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(csrfToken))
+        {
+            csrfToken = await Token.GetCsrfTokenAsync();
+        }
+    }
+
+    private async Task LogOut()
+    {
+
+        var json = JsonSerializer.Serialize("");
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        // Lisätään CSRF token headeriin
+        content.Headers.Add("X-CSRFToken", csrfToken);
+
+        var response = await Http.PostAsync(LogoutUri, content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            // // Varmistetaan, että CSRF-token päivittyy ennen seuraavaa API-pyyntöä
+            // await RefreshCsrfToken();
+
+            // Lataa sovellus uudelleen
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            Console.WriteLine("Pyyntö epäonnistui.");
+        }
+    }
+
+    private async Task RefreshCsrfToken()
+    {
+        // //Varmistetaan että CSRF on poistettu ja uudistettu jotta sessio päättyy varmemmin
+        // var csrfToken = await Token.GetCsrfTokenAsync();
+        Http.DefaultRequestHeaders.Remove("X-CSRFToken"); // poista vanha token
+        // Http.DefaultRequestHeaders.Add("X-CSRFToken", csrfToken); // Lisää uusi token
+    }
+}

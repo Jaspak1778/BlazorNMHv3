@@ -1,0 +1,82 @@
+﻿@page "/newpost"
+@inject HttpClient HttpClient
+@inject TokenService Token
+@inject NavigationManager NavigationManager
+
+<style>
+    textarea {
+        width: 100%;
+        height: 150px;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        resize: vertical;
+
+    }
+</style>
+
+<h4>Uusi Postaus</h4>
+
+<div>
+<div>
+        <textarea class=textarea placeholder="Julkaise jotain uutta ! " rows="5" cols="40" @bind="postaus"></textarea>
+</div>
+
+<button class="btn btn-primary" @onclick="NewPost">Lähetä postaus</button>
+</div>
+<p>@success</p>
+
+@code {
+    private const string PostsUri = ApiCallerUri.Posts;
+
+    private string? csrfToken;
+    private string? postaus;
+    private string? success;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(csrfToken))
+        {
+            csrfToken = await Token.GetCsrfTokenAsync();
+        }
+    }
+
+
+
+    private async Task NewPost()
+    {
+        try
+        {
+
+            var postData = new
+            {
+                content = postaus
+            };
+
+            var json = JsonSerializer.Serialize(postData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            // Lisätään CSRF token headeriin
+            content.Headers.Add("X-CSRFToken", csrfToken);
+            var response = await HttpClient.PostAsync(PostsUri, content);
+            if (response.IsSuccessStatusCode)
+            {
+                success = "Postaus lähetetty onnistuneesti!";
+                postaus = ""; // Tyhjennetään kenttä onnistuneen lähetyksen jälkeen
+                NavigationManager.NavigateTo("/feed");
+
+            }
+            else
+            {
+                success = "Postauksen lähetys epäonnistui. Tarkista API.";
+            }
+        }
+        catch (Exception ex)
+        {
+            success = $"Virhe: {ex.Message}";
+        }
+    }
+
+}
+
