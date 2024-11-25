@@ -167,26 +167,19 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FetchCsrfToken();
         await FetchPosts();
     }
 
-    private async Task FetchCsrfToken()
-    {
-        if (string.IsNullOrEmpty(csrfToken))
-        {
-            csrfToken = await Token.GetCsrfTokenAsync();
-        }
-    }
+
 
     private async Task FetchPosts()
     {
         try
         {   
             posts = await Http.GetFromJsonAsync<List<Post>>(PostsUri);
-            await FetchComments();
-            await FetchLikes();
-            await Alert();
+            _ = FetchPosts();
+            _ = FetchComments();
+            _ = FetchLikes(); ();
         }
         catch (Exception ex)
         {
@@ -198,7 +191,6 @@ else
     {
         try
         {
-            await FetchCsrfToken(); // Tarkista ja hae token tarvittaessa
             var request = new HttpRequestMessage(HttpMethod.Delete, $"{PostsUri}/{postId}/");   /* muista interpolaatio dollarmerkki */
             request.Headers.Add("X-CSRFToken", csrfToken);
 
@@ -224,7 +216,7 @@ else
     {
         try
         {
-            await FetchCsrfToken();
+
             var request = new HttpRequestMessage(HttpMethod.Delete, $"{CommentUri}/{commentId}/");
             request.Headers.Add("X-CSRFToken", csrfToken);
 

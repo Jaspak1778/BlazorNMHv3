@@ -9,6 +9,7 @@
     color: blue;
     border: none;
     border-radius: 5px
+    }
 
 </style>
 
@@ -27,7 +28,7 @@
         </form>
     </div>
 </div>
-<p>@success</p>
+<p>@announcer</p>
 
 @code {
 
@@ -39,16 +40,12 @@
 
     private const string CommentsUri = ApiCallerUri.Comment;
 
-    private string? csrfToken;
     private string? kommentti;
-    private string? success;
+    private string? announcer;
         
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(csrfToken))
-        {
-            csrfToken = await Token.GetCsrfTokenAsync();
-        }
+
     }
 
     private async Task NewComment()
@@ -64,29 +61,42 @@
             var json = JsonSerializer.Serialize(CommentData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            // Lisätään CSRF token headeriin
-            content.Headers.Add("X-CSRFToken", csrfToken);
-            var response = await Http.PostAsync(CommentsUri, content);
+            // Luo uusi HttpRequestMessage, jotta voimme lisätä Authorization-otsikon
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, CommentsUri)
+                {
+                    Content = content
+                };
+
+            // Lisää Authorization-otsikko käyttäen TokenService-luokkaa
+            var accessToken = Token.GetAccessToken(); // Oletus: Token on `TokenService`-instanssi
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            }
+            else
+            {
+                announcer = "Kommentin lähetys epäonnistui: Access token puuttuu.";
+                return;
+            }
+
+            // Suorita pyyntö
+            var response = await Http.SendAsync(requestMessage);
 
             if (response.IsSuccessStatusCode)
             {
-                success = "Kommentti lähetetty onnistuneesti!";
+                announcer = "Kommentti lähetetty onnistuneesti!";
                 kommentti = ""; // Tyhjennetään kenttä onnistuneen lähetyksen jälkeen
                 await OnCommentCreated.InvokeAsync();
             }
             else
             {
-                success = "Kommentin lähetys epäonnistui. Tarkista API.";
+                announcer = "Kommentin lähetys epäonnistui. Tarkista API.";
             }
         }
         catch (Exception ex)
         {
-            success = $"Virhe: {ex.Message}";
+            announcer = $"Virhe: {ex.Message}";
         }
     }
-    //Apuluokka csrf tokenille
-    private class CsrfTokenResponse
-    {
-        public string? CsrfToken { get; set; }
-    }
+
 }

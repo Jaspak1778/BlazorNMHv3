@@ -3,123 +3,137 @@
 @inject NavigationManager Navigation
 @inject User User
 @inject TokenService Token
+@inject IHttpClientFactory HttpClientFactory
 
-
-
-    <div class="login-container">
-        <h1>Kirjaudu</h1>
-        <form @onsubmit="Logins" class="login-form">
-
-            <div class="input-container">
+<div class="login-container">
+    <h1>Kirjaudu</h1>
+    <form @onsubmit="Logins" class="login-form">
+        <div class="input-container">
             <InputText id="user" class="form-input" @bind-Value="username" @onmouseover="() => showFail = false" placeholder="Käyttäjä" required />
-          
-            </div>
-            <div class="input-container">
+        </div>
+        <div class="input-container">
             <InputText id="pass" type="password" class="form-input" @bind-Value="password" placeholder="Salasana" required />
-       
-            </div>
-            <button type="submit" class="custom-button">Kirjaudu</button>
-        </form>
-        <a href="signup" class="signup-link">Uusi käyttäjä? Luo tunnukset</a>
-    </div>
+        </div>
+        <button type="submit" class="custom-button">Kirjaudu</button>
+    </form>
+    <a href="signup" class="signup-link">Uusi käyttäjä? Luo tunnukset</a>
+</div>
 
-    @if (showFail)
-    {
-        <div class="error-message">@announcer</div>
-    }
-
-
+@if (showFail)
+{
+    <div class="error-message">@announcer</div>
+}
 
 @code {
-
     private string? username;
     private string? password;
     private string? announcer;
     private bool showFail = false;
 
-    private const string LoginUri = ApiCallerUri.Login;
-    private const string UsersUri = ApiCallerUri.Users;
+    private const string LoginUri = "http://127.0.0.1:8000/api/login/"; // Kirjautumis-API URL
+    private const string ProfileUri = "http://127.0.0.1:8000/api/profile/"; // Profiili-API URL
 
     private async Task Logins()
     {
-
-        var loginData = new
-
+        try
         {
-            username = username,
-            password = password
-        };
+            var loginData = new { username = username, password = password };
+            var json = JsonSerializer.Serialize(loginData);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var json = JsonSerializer.Serialize(loginData);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        // Yllä on logindata joka on muutettu JSON muotoon ja joka lisätään bodyyn
+            var response = await Http.PostAsync(LoginUri, content);
 
-        var response = await Http.PostAsync(LoginUri, content);
-        if (response.IsSuccessStatusCode)
-
-        {
-            var message = response.Content;
-            var responseContent = await response.Content.ReadAsStringAsync();
-            var user = JsonSerializer.Deserialize<User>(responseContent);
-            if (user != null)
-
+            if (response.IsSuccessStatusCode)
             {
-                announcer = "Kirjauduttu sisään..";
-                User.ShowAlert = true;
-                await FetchUserDetails();
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent);
 
+                if (tokenResponse != null && !string.IsNullOrEmpty(tokenResponse.Access) && !string.IsNullOrEmpty(tokenResponse.Refresh))
+                {
+                    // Save both access and refresh tokens using TokenService
+                    Token.SaveTokens(tokenResponse.Access, tokenResponse.Refresh);  // Save both tokens
+
+                    announcer = "Kirjauduttu sisään!";
+                    User.ShowAlert = true;
+
+                    // Fetch user details with the access token
+                    await FetchUserDetails(tokenResponse.Access);  // Pass the access token here
+                }
+                else
+                {
+                    showFail = true;
+                    announcer = "Kirjautuminen epäonnistui: Token puuttuu.";
+                }
             }
             else
-
             {
+                // Invalid login
+                var errorContent = await response.Content.ReadAsStringAsync();
                 showFail = true;
-                announcer = "Kirjautuminen epäonnistui: Käyttäjä ei löytynyt.";
+                announcer = $"Virheellinen kirjautuminen: {errorContent}";
             }
-
         }
-        else
+        catch (Exception ex)
         {
             showFail = true;
-            announcer = "Väärä tunnus tai salasana, tarkista!";
-            Console.WriteLine("Kirjautuminen epäonnistui.");
+            announcer = "Virhe kirjautumisessa: " + ex.Message;
         }
     }
-    private async Task FetchUserDetails()
+
+    private async Task FetchUserDetails(string accessToken)
     {
-
-        var userResponse = await Http.GetAsync("https://djangorestapiv3.azurewebsites.net/api/users/");
-
-        if (userResponse.IsSuccessStatusCode)
+        try
         {
-            var userContent = await userResponse.Content.ReadAsStringAsync();
-            var userDetailsList = JsonSerializer.Deserialize<List<User>>(userContent);
-            var userDetails = userDetailsList?.FirstOrDefault();
-            if (userDetails != null)
+            // Ensure the namespace for AuthenticationHeaderValue is imported
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, ProfileUri)
+                {
+                    Headers =
+                {
+                    // Include the Authorization header with the Bearer token
+                    Authorization = new AuthenticationHeaderValue("Bearer", accessToken)
+                }
+                };
 
+            var userResponse = await Http.SendAsync(requestMessage);
+
+            if (userResponse.IsSuccessStatusCode)
             {
-                User.username = userDetails.username; // Aseta käyttäjänimi
-                User.id = userDetails.id;         // Aseta käyttäjän ID
-                User.IsLoggedIn = true;                // Aseta kirjautumistila
+                var userContent = await userResponse.Content.ReadAsStringAsync();
+                var userDetails = JsonSerializer.Deserialize<User>(userContent);
 
-                Console.WriteLine($"Kirjautunut käyttäjä: {userDetails.username}, Etunimi: {userDetails.first_name}, Sukunimi: {userDetails.last_name}");
-                Navigation.NavigateTo("/feed");
-                await GetToken();
+                if (userDetails != null)
+                {
+                    User.username = userDetails.username;
+                    User.id = userDetails.id;
+                    User.IsLoggedIn = true;
+
+                    // Navigate to the feed page
+                    Navigation.NavigateTo("/feed");
+                }
+                else
+                {
+                    showFail = true;
+                    announcer = "Käyttäjän tietojen hakeminen epäonnistui.";
+                }
             }
             else
             {
-                announcer = "Käyttäjän tietojen hakeminen epäonnistui: Käyttäjä ei löytynyt.";
+                var errorContent = await userResponse.Content.ReadAsStringAsync();
+                showFail = true;
+                announcer = $"Käyttäjän tietojen hakeminen epäonnistui: {errorContent}";
             }
         }
-        else
+        catch (HttpRequestException httpEx)
         {
-            announcer = "Käyttäjän tietojen hakeminen epäonnistui.";
-            Navigation.NavigateTo("/feed");
+            showFail = true;
+            announcer = "Verkko-ongelma: " + httpEx.Message;
         }
-
-    }
-    private async Task GetToken()
-    {
-        var csrfToken = await Token.GetCsrfTokenAsync();
-        Console.WriteLine("Token");
+        catch (Exception ex)
+        {
+            showFail = true;
+            announcer = "Virhe käyttäjätietojen hakemisessa: " + ex.Message;
+        }
     }
 }
+
+

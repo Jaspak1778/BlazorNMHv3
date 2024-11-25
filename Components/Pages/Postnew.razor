@@ -1,5 +1,5 @@
 ﻿@page "/newpost"
-@inject HttpClient HttpClient
+@inject HttpClient Http
 @inject TokenService Token
 @inject NavigationManager NavigationManager
 
@@ -12,44 +12,35 @@
         border: 1px solid #ccc;
         border-radius: 5px;
         resize: vertical;
-
     }
 </style>
 
 <h4>Uusi Postaus</h4>
 
 <div>
-<div>
-        <textarea class=textarea placeholder="Julkaise jotain uutta ! " rows="5" cols="40" @bind="postaus"></textarea>
-</div>
+    <div>
+        <textarea class="textarea" placeholder="Julkaise jotain uutta!" rows="5" cols="40" @bind="postaus"></textarea>
+    </div>
 
-<button class="btn btn-primary" @onclick="NewPost">Lähetä postaus</button>
+    <button class="btn btn-primary" @onclick="NewPost">Lähetä postaus</button>
 </div>
-<p>@success</p>
+<p>@announcer</p>
 
 @code {
     private const string PostsUri = ApiCallerUri.Posts;
 
-    private string? csrfToken;
     private string? postaus;
-    private string? success;
-
+    private string? announcer;
 
     protected override async Task OnInitializedAsync()
     {
-        if (string.IsNullOrEmpty(csrfToken))
-        {
-            csrfToken = await Token.GetCsrfTokenAsync();
-        }
+
     }
-
-
 
     private async Task NewPost()
     {
         try
         {
-
             var postData = new
             {
                 content = postaus
@@ -57,26 +48,42 @@
 
             var json = JsonSerializer.Serialize(postData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            // Lisätään CSRF token headeriin
-            content.Headers.Add("X-CSRFToken", csrfToken);
-            var response = await HttpClient.PostAsync(PostsUri, content);
-            if (response.IsSuccessStatusCode)
-            {
-                success = "Postaus lähetetty onnistuneesti!";
-                postaus = ""; // Tyhjennetään kenttä onnistuneen lähetyksen jälkeen
-                NavigationManager.NavigateTo("/feed");
 
+            // Luo uusi HttpRequestMessage, jotta voimme lisätä Authorization-otsikon
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, PostsUri)
+                {
+                    Content = content
+                };
+
+            // Lisää Authorization-otsikko käyttäen TokenService-luokkaa
+            var accessToken = Token.GetAccessToken(); // Oletus: Token on `TokenService`-instanssi
+            if (!string.IsNullOrEmpty(accessToken))
+            {
+                requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
             }
             else
             {
-                success = "Postauksen lähetys epäonnistui. Tarkista API.";
+                announcer = "Julkaisun lähetys epäonnistui: Access token puuttuu.";
+                return;
+            }
+
+            // Suorita pyyntö
+            var response = await Http.SendAsync(requestMessage);
+
+            if (response.IsSuccessStatusCode)
+            {
+                announcer = "Julkaisu lähetetty onnistuneesti!";
+                postaus = ""; // Tyhjennetään kenttä onnistuneen lähetyksen jälkeen
+   
+            }
+            else
+            {
+                announcer = "Julkaisun lähetys epäonnistui. Tarkista API.";
             }
         }
         catch (Exception ex)
         {
-            success = $"Virhe: {ex.Message}";
+            announcer = $"Virhe: {ex.Message}";
         }
     }
-
 }
-
