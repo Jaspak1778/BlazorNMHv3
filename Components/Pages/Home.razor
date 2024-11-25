@@ -30,8 +30,8 @@
     private string? announcer;
     private bool showFail = false;
 
-    private const string LoginUri = "http://127.0.0.1:8000/api/login/"; // Kirjautumis-API URL
-    private const string ProfileUri = "http://127.0.0.1:8000/api/profile/"; // Profiili-API URL
+    private const string LoginUri = ApiCallerUri.Login;
+    private const string ProfileUri = ApiCallerUri.Profile;
 
     private async Task Logins()
     {

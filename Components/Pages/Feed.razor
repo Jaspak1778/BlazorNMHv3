@@ -6,15 +6,15 @@
 <style>
     .comment {
 
-        background: white;
-        color: cornflowerblue;
-        border: none;
+    background: white;
+    color: cornflowerblue;
+    border: none;
     }
 
     .like {
-        background: white;
-        color: red;
-        border: none;
+    background: white;
+    color: red;
+    border: none;
     }
 
     .delete {
@@ -43,7 +43,7 @@
 @if (posts == null || posts.Count == 0)
 {   
     <p>Ladataan..</p>
-                @*     <img class="loadingbgnd" src="/Pictures/iceload.gif"/> *@
+    @*     <img class="loadingbgnd" src="/Pictures/iceload.gif"/> *@
 }
 else
 {
@@ -167,19 +167,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await FetchPosts();
-    }
-
-
-
-    private async Task FetchPosts()
-    {
         try
-        {   
+        {
             posts = await Http.GetFromJsonAsync<List<Post>>(PostsUri);
-            _ = FetchPosts();
             _ = FetchComments();
-            _ = FetchLikes(); ();
+            _ = FetchLikes();
+            _ = Alert();
         }
         catch (Exception ex)
         {
@@ -192,7 +185,7 @@ else
         try
         {
             var request = new HttpRequestMessage(HttpMethod.Delete, $"{PostsUri}/{postId}/");   /* muista interpolaatio dollarmerkki */
-            request.Headers.Add("X-CSRFToken", csrfToken);
+
 
             var response = await Http.SendAsync(request);
             if (response.IsSuccessStatusCode)
@@ -297,8 +290,7 @@ else
 
             var json = JsonSerializer.Serialize(LikeData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            // Lisätään CSRF token headeriin
-            content.Headers.Add("X-CSRFToken", csrfToken);
+
             var response = await Http.PostAsync(LikesUri, content);
             if (response.IsSuccessStatusCode)
             {

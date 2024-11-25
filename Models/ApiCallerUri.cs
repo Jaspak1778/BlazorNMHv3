@@ -9,8 +9,8 @@ namespace MauiApp3.Models
 {
     public static class ApiCallerUri
     {
-        private const string domainBody = "http://127.0.0.1:8000/api/";
-        //private const string domainBody = "https://djangorestapiv3.azurewebsites.net/api/";
+        //private const string domainBody = "http://127.0.0.1:8000/api/";
+        private const string domainBody = "https://djangorestapiv3.azurewebsites.net/api/";
 
         //API päätepisteet
         public const string Login = $"{domainBody}login/";
